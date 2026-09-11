@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="theme-color" content="#0b1024">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>スマッシュブロ - SMASH BRO</title>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<canvas id="game"></canvas>
+
+<!-- ============ UI OVERLAY ============ -->
+<div id="ui">
+
+  <!-- ---- TITLE ---- -->
+  <section class="screen active" id="scr-title">
+    <div class="title-wrap">
+      <h1 class="logo"><span>SMASH</span><b>BRO</b></h1>
+      <p class="tagline">スマホで遊ぶ 2D 大乱闘アクション</p>
+      <div class="menu">
+        <button class="btn big" data-go="local">
+          <i class="ic ic-local"></i><span>ローカル対戦</span><small>同じ画面で2人</small>
+        </button>
+        <button class="btn big" data-go="cpu">
+          <i class="ic ic-cpu"></i><span>CPU対戦</span><small>1人用・オフライン</small>
+        </button>
+        <button class="btn big" data-go="online">
+          <i class="ic ic-net"></i><span>オンライン対戦</span><small>リアルタイム通信</small>
+        </button>
+        <button class="btn ghost" data-go="howto"><span>あそびかた</span></button>
+      </div>
+      <p class="hint">横持ち推奨 / タッチ操作専用</p>
+    </div>
+  </section>
+
+  <!-- ---- HOW TO ---- -->
+  <section class="screen" id="scr-howto">
+    <div class="panel scroll">
+      <h2>あそびかた</h2>
+      <div class="howto-grid">
+        <div class="ht"><b>① ダメージ％</b>攻撃を受けると％が増加。％が高いほど遠くまで吹き飛びます。</div>
+        <div class="ht"><b>② ストック</b>画面外に吹き飛ぶと1ストック減少。全て失うと敗北です。</div>
+        <div class="ht"><b>③ 移動</b>画面のジョイスティックで移動。上に倒すと台に乗る、下で台をすり抜け。</div>
+        <div class="ht"><b>④ 通常攻撃</b>連打でコンボ。空中で押すと空中攻撃になります。</div>
+        <div class="ht"><b>⑤ スマッシュ</b>押しっぱなしで溜め、離すと発動。スティックの向きで横／上／下スマッシュ。</div>
+        <div class="ht"><b>⑥ 特殊技</b>キャラ固有の必殺技。飛び道具や強化技など。</div>
+        <div class="ht"><b>⑦ ジャンプ</b>空中でもう一度押すと2段ジャンプ。長押しで高く跳べます。</div>
+        <div class="ht"><b>⑧ アイテム</b>落ちてきたアイテムに触れると取得。爆弾は攻撃ボタンで投げます。</div>
+      </div>
+      <button class="btn back" data-go="title">もどる</button>
+    </div>
+  </section>
+
+  <!-- ---- CHARACTER SELECT ---- -->
+  <section class="screen" id="scr-char">
+    <div class="panel">
+      <div class="topbar">
+        <button class="btn tiny" data-go="title">← もどる</button>
+        <h2 id="char-title">キャラクター選択</h2>
+        <button class="btn tiny prim" id="char-next">つぎへ →</button>
+      </div>
+      <div class="slot-row" id="slot-row"></div>
+      <div class="char-grid" id="char-grid"></div>
+      <div class="char-info" id="char-info"></div>
+    </div>
+  </section>
+
+  <!-- ---- STAGE SELECT ---- -->
+  <section class="screen" id="scr-stage">
+    <div class="panel">
+      <div class="topbar">
+        <button class="btn tiny" id="stage-back">← もどる</button>
+        <h2>ステージ選択</h2>
+        <button class="btn tiny prim" id="stage-start">スタート！</button>
+      </div>
+      <div class="stage-grid" id="stage-grid"></div>
+      <div class="rules" id="rules">
+        <div class="rule">
+          <label>ストック</label>
+          <div class="seg" data-rule="stocks">
+            <button data-v="1">1</button><button data-v="2">2</button>
+            <button class="on" data-v="3">3</button><button data-v="5">5</button>
+          </div>
+        </div>
+        <div class="rule">
+          <label>アイテム</label>
+          <div class="seg" data-rule="items">
+            <button data-v="0">なし</button><button data-v="1">少ない</button>
+            <button class="on" data-v="2">ふつう</button><button data-v="3">多い</button>
+          </div>
+        </div>
+        <div class="rule" id="rule-cpu">
+          <label>CPUの強さ</label>
+          <div class="seg" data-rule="cpu">
+            <button data-v="0">簡単</button><button class="on" data-v="1">普通</button><button data-v="2">難しい</button>
+          </div>
+        </div>
+        <div class="rule" id="rule-cpun">
+          <label>CPUの人数</label>
+          <div class="seg" data-rule="cpun">
+            <button class="on" data-v="1">1体</button><button data-v="2">2体</button><button data-v="3">3体</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ---- ONLINE LOBBY ---- -->
+  <section class="screen" id="scr-online">
+    <div class="panel">
+      <div class="topbar">
+        <button class="btn tiny" data-go="title">← もどる</button>
+        <h2>オンライン対戦</h2>
+        <span class="net-state" id="net-state">未接続</span>
+      </div>
+      <div class="online-body">
+        <div class="ocard">
+          <h3>ルームを作る</h3>
+          <p>ルームIDを相手に伝えて入室してもらいます。</p>
+          <button class="btn prim" id="btn-create">ルーム作成</button>
+          <div class="roomid" id="roomid-box" hidden>
+            <span>ルームID</span><b id="roomid"></b>
+            <button class="btn tiny" id="btn-copy">コピー</button>
+          </div>
+        </div>
+        <div class="ocard">
+          <h3>ルームに参加</h3>
+          <p>4文字のルームIDを入力してください。</p>
+          <input id="join-id" maxlength="6" placeholder="例: 4K7Q" autocomplete="off" autocapitalize="characters">
+          <button class="btn prim" id="btn-join">入室する</button>
+        </div>
+        <div class="ocard">
+          <h3>ランダムマッチ</h3>
+          <p>空いている相手を自動でさがします。</p>
+          <button class="btn prim" id="btn-random">マッチング開始</button>
+        </div>
+      </div>
+      <p class="netlog" id="netlog"></p>
+    </div>
+  </section>
+
+  <!-- ---- PAUSE ---- -->
+  <section class="screen dim" id="scr-pause">
+    <div class="panel small">
+      <h2>ポーズ</h2>
+      <button class="btn prim" id="pz-resume">つづける</button>
+      <button class="btn" id="pz-retry">はじめから</button>
+      <button class="btn" id="pz-quit">やめる</button>
+    </div>
+  </section>
+
+  <!-- ---- RESULT ---- -->
+  <section class="screen dim" id="scr-result">
+    <div class="panel small">
+      <h2 id="res-title">GAME SET</h2>
+      <div id="res-list" class="res-list"></div>
+      <button class="btn prim" id="rs-retry">もう一度</button>
+      <button class="btn" id="rs-quit">メニューへ</button>
+    </div>
+  </section>
+
+  <!-- ---- TOAST ---- -->
+  <div id="toast"></div>
+
+  <!-- ---- IN-GAME MINI BUTTONS ---- -->
+  <button id="btn-pause" hidden>❚❚</button>
+</div>
+
+<script src="js/util.js"></script>
+<script src="js/characters.js"></script>
+<script src="js/stages.js"></script>
+<script src="js/items.js"></script>
+<script src="js/input.js"></script>
+<script src="js/engine.js"></script>
+<script src="js/ai.js"></script>
+<script src="js/render.js"></script>
+<script src="js/net.js"></script>
+<script src="js/ui.js"></script>
+<script src="js/main.js"></script>
+</body>
+</html>
