@@ -170,28 +170,50 @@
     /* moon */
     var mx = px * 0.1 + 260, my = py * 0.1 - 250;
     c.save(); c.globalAlpha = .9;
-    c.fillStyle = rg(c, 'moon', mx, my, 6, mx, my, 90, [[0, 'rgba(255,240,210,.95)'], [0.35, 'rgba(255,210,160,.5)'], [1, 'rgba(255,180,120,0)']]);
-    c.beginPath(); c.arc(mx, my, 90, 0, 6.2832); c.fill();
-    c.fillStyle = '#fff4dc'; c.beginPath(); c.arc(mx, my, 34, 0, 6.2832); c.fill();
+    c.fillStyle = rg(c, 'moon', mx, my, 6, mx, my, 100, [[0, 'rgba(255,244,214,.95)'], [0.32, 'rgba(255,206,150,.45)'], [1, 'rgba(255,170,110,0)']]);
+    c.beginPath(); c.arc(mx, my, 100, 0, 6.2832); c.fill();
+    c.fillStyle = '#fff6e2'; c.beginPath(); c.arc(mx, my, 32, 0, 6.2832); c.fill();
     c.restore();
-    /* distant columns */
-    c.save(); c.translate(px * 0.28, py * 0.28);
-    c.fillStyle = lg(c, 'colF', 0, -200, 0, 400, [[0, '#6d5a86'], [1, '#3a2c52']]);
-    for (var i = -4; i <= 4; i++) {
-      var x = i * 210 + 40, h = 210 + (i % 3) * 90;
-      c.fillRect(x, 200 - h, 46, h);
-      c.fillRect(x - 10, 190 - h, 66, 20);
+
+    /* far ruin skyline (low contrast, hazy) */
+    c.save(); c.translate(px * 0.22, py * 0.22); c.globalAlpha = .42;
+    c.fillStyle = '#4a3560';
+    for (var i = -5; i <= 5; i++) {
+      var x = i * 190 + 30, h = 150 + ((i * 7) % 5) * 46;
+      c.fillRect(x, 250 - h, 34, h);
+      c.fillRect(x - 8, 240 - h, 50, 14);
     }
     c.restore();
-    c.save(); c.translate(px * 0.45, py * 0.45);
-    c.fillStyle = lg(c, 'colN', 0, -100, 0, 420, [[0, '#8a6f9c'], [1, '#2e2244']]);
+
+    /* mid columns : broken tops */
+    c.save(); c.translate(px * 0.4, py * 0.4); c.globalAlpha = .55;
     for (i = -3; i <= 3; i++) {
-      var x2 = i * 300 - 80, h2 = 300 + (i % 2) * 120;
-      c.fillRect(x2, 260 - h2, 60, h2);
-      c.fillRect(x2 - 14, 246 - h2, 88, 24);
+      var cx = i * 265 - 60, ch = 250 + ((i * 5) % 3) * 110, cw = 46;
+      c.fillStyle = lg(c, 'colN', 0, -140, 0, 320, [[0, '#6a4e7d'], [0.6, '#432f57'], [1, '#2a1c3c']]);
+      c.beginPath();
+      c.moveTo(cx, 300);
+      c.lineTo(cx, 300 - ch + (i % 2 ? 16 : 0));
+      c.lineTo(cx + cw * 0.45, 300 - ch - 10);
+      c.lineTo(cx + cw, 300 - ch + (i % 2 ? 0 : 14));
+      c.lineTo(cx + cw, 300);
+      c.closePath(); c.fill();
+      /* fluting */
+      c.globalAlpha = .2; c.strokeStyle = '#d9c2ef'; c.lineWidth = 2;
+      c.beginPath(); c.moveTo(cx + 12, 296); c.lineTo(cx + 12, 300 - ch + 12); c.stroke();
+      c.globalAlpha = .55;
+      /* base block */
+      c.fillStyle = '#33234a';
+      c.fillRect(cx - 10, 292, cw + 20, 16);
     }
     c.restore();
-    for (i = 0; i < 3; i++) cloud(c, ((i * 520 + t * 0.14) % 1600) - 800 + px * 0.2, -280 + i * 80 + py * 0.2, 1.1, 0.3);
+
+    /* warm haze */
+    c.save();
+    c.fillStyle = lg(c, 'haze', 0, -120, 0, 340, [[0, 'rgba(255,150,90,0)'], [1, 'rgba(255,150,90,.3)']]);
+    c.fillRect(-1400, -200, 2800, 600);
+    c.restore();
+
+    for (i = 0; i < 3; i++) cloud(c, ((i * 520 + t * 0.14) % 1600) - 800 + px * 0.2, -300 + i * 70 + py * 0.2, 1.3, 0.22);
   }
 
   function bgSky(c, px, py, view, t) {
@@ -272,42 +294,77 @@
   function platRuins(c, p, main, brk) {
     var x = p.x, y = p.y, wd = p.w, h = p.h;
     c.save();
-    c.beginPath(); SB.roundRect(c, x, y, wd, h, 6); 
-    c.fillStyle = lg(c, 'stone' + h, 0, y, 0, y + h, [[0, '#cbbba0'], [0.35, '#a08f78'], [1, '#5d5142']]);
+    /* body */
+    c.beginPath();
+    c.moveTo(x, y + 6);
+    c.lineTo(x + wd, y + 6);
+    c.lineTo(x + wd - (main ? 18 : 6), y + h);
+    c.lineTo(x + (main ? 18 : 6), y + h);
+    c.closePath();
+    c.fillStyle = lg(c, 'stone' + h, 0, y, 0, y + h, [[0, '#e2cda4'], [0.28, '#c0a87e'], [0.7, '#8a7355'], [1, '#4c3f2d']]);
     c.fill();
-    c.strokeStyle = 'rgba(40,32,22,.85)'; c.lineWidth = 3; c.stroke();
-    /* blocks */
-    c.globalAlpha = .35; c.strokeStyle = '#463a2a'; c.lineWidth = 2;
-    for (var i = 1; i * 64 < wd; i++) { c.beginPath(); c.moveTo(x + i * 64, y + 4); c.lineTo(x + i * 64, y + h - 2); c.stroke(); }
-    if (h > 40) { c.beginPath(); c.moveTo(x + 2, y + h * .5); c.lineTo(x + wd - 2, y + h * .5); c.stroke(); }
-    c.globalAlpha = 1;
-    /* mossy top */
-    c.save(); c.globalAlpha = .55;
-    c.fillStyle = lg(c, 'moss', 0, y - 3, 0, y + 8, [[0, '#7ba95e'], [1, 'rgba(110,140,80,0)']]);
-    c.fillRect(x + 3, y - 2, wd - 6, 9); c.restore();
-    c.globalAlpha = .55; c.fillStyle = '#fff1cf'; c.fillRect(x + 4, y - 1, wd - 8, 2.5);
-    c.globalAlpha = 1;
+    c.strokeStyle = 'rgba(38,28,16,.9)'; c.lineWidth = 3; c.lineJoin = 'round'; c.stroke();
+
+    /* carved block seams */
+    c.save(); c.globalAlpha = .3; c.strokeStyle = '#3d3120'; c.lineWidth = 2;
+    var rows = Math.max(1, Math.floor(h / 42));
+    for (var r0 = 1; r0 < rows; r0++) {
+      var ry = y + 6 + (h - 6) * (r0 / rows);
+      c.beginPath(); c.moveTo(x + 4, ry); c.lineTo(x + wd - 4, ry); c.stroke();
+    }
+    for (var i = 1; i * 68 < wd; i++) {
+      var off = (i % 2) * 34;
+      c.beginPath(); c.moveTo(x + i * 68 - off, y + 8); c.lineTo(x + i * 68 - off, y + h - 2); c.stroke();
+    }
+    c.restore();
+
+    /* cap stone with overhanging lip */
+    c.beginPath(); SB.roundRect(c, x - 4, y - 7, wd + 8, 15, 4);
+    c.fillStyle = lg(c, 'cap', 0, y - 8, 0, y + 9, [[0, '#f1e2bd'], [0.55, '#cdb68c'], [1, '#94795a']]);
+    c.fill(); c.strokeStyle = 'rgba(38,28,16,.9)'; c.lineWidth = 2.6; c.stroke();
+    c.save(); c.globalAlpha = .75; c.fillStyle = '#fff6df';
+    c.fillRect(x - 1, y - 6, wd + 2, 3); c.restore();
+
+    /* moss tufts */
+    c.save(); c.globalAlpha = .5; c.fillStyle = '#6f9b4e';
+    for (i = 0; i * 96 < wd; i++) {
+      var mxp = x + 22 + i * 96;
+      c.beginPath(); c.ellipse(mxp, y - 6, 13, 4.5, 0, 0, 6.2832); c.fill();
+    }
+    c.restore();
+
     if (brk) {
       var dmg = 1 - p.hp / p.maxhp;
-      c.strokeStyle = 'rgba(50,30,15,' + (0.35 + dmg * 0.6) + ')'; c.lineWidth = 2 + dmg * 2;
+      c.strokeStyle = 'rgba(46,28,12,' + (0.4 + dmg * 0.55) + ')'; c.lineWidth = 2 + dmg * 2.5;
+      c.lineCap = 'round';
       for (i = 0; i < 3; i++) {
-        var bx = x + wd * (0.25 + i * 0.25);
-        c.beginPath(); c.moveTo(bx, y + 2);
-        c.lineTo(bx + 6 * (i - 1) - 4, y + h * 0.5);
-        c.lineTo(bx + 3 * (1 - i), y + h - 2); c.stroke();
+        var bx = x + wd * (0.24 + i * 0.26);
+        c.beginPath(); c.moveTo(bx, y - 2);
+        c.lineTo(bx + 7 * (i - 1) - 5, y + h * 0.55);
+        c.lineTo(bx + 4 * (1 - i), y + h + 1); c.stroke();
       }
-      if (dmg > 0.2) {
-        c.fillStyle = 'rgba(255,120,60,' + (dmg * 0.35) + ')';
-        c.fillRect(x, y, wd, h);
+      if (dmg > 0.15) {
+        c.save(); c.globalAlpha = dmg * 0.4;
+        c.fillStyle = '#ff6a2b';
+        SB.roundRect(c, x - 4, y - 7, wd + 8, h + 8, 5); c.fill(); c.restore();
       }
+      /* warning marker */
+      c.save(); c.globalAlpha = .5; c.fillStyle = '#ffb03a';
+      c.beginPath(); c.moveTo(x + wd / 2 - 7, y - 14); c.lineTo(x + wd / 2 + 7, y - 14); c.lineTo(x + wd / 2, y - 24); c.closePath();
+      c.fill(); c.restore();
     }
     c.restore();
   }
 
   function drawBroken(c, p, th) {
-    c.save(); c.globalAlpha = 0.22;
-    c.strokeStyle = '#ffcf8a'; c.lineWidth = 2; c.setLineDash([8, 8]);
-    c.strokeRect(p.x, p.y, p.w, p.h);
+    var k = p.broken / 420;
+    c.save();
+    c.globalAlpha = 0.10 + (1 - k) * 0.14;
+    c.fillStyle = '#e7d3ab';
+    SB.roundRect(c, p.x, p.y, p.w, p.h * 0.6, 4); c.fill();
+    c.globalAlpha = 0.30;
+    c.strokeStyle = '#ffcf8a'; c.lineWidth = 2; c.setLineDash([7, 9]);
+    c.beginPath(); c.moveTo(p.x, p.y); c.lineTo(p.x + p.w, p.y); c.stroke();
     c.restore();
   }
 
@@ -1141,8 +1198,8 @@
   /* big announcements */
   R.drawAnnounce = function (c, g, view) {
     var txt = null, col = '#ffd24a', sc = 1;
-    if (g.intro > 100) { txt = 'READY?'; sc = 1 - (g.intro - 100) / 50 * 0.2; }
-    else if (g.intro > 20) { txt = '' + Math.ceil((g.intro - 20) / 40); col = '#ffffff'; }
+    if (g.intro > 110) { txt = 'READY?'; sc = 1 - (g.intro - 110) / 40 * 0.2; }
+    else if (g.intro > 20) { txt = '' + SB.clamp(Math.ceil((g.intro - 20) / 30), 1, 3); col = '#ffffff'; }
     else if (g.intro > 0) { txt = 'GO!'; col = '#7ee87e'; sc = 1 + (20 - g.intro) / 20 * 0.5; }
     else if (g.over) { txt = 'GAME SET'; col = '#ffd24a'; }
     if (!txt) return;

@@ -122,6 +122,7 @@
     this.endT = 0;
     this.paused = false;
     this.hitstop = 0;
+    this.replica = false;
 
     var sp = this.stage.spawns;
     for (var i = 0; i < cfg.fighters.length; i++) {
@@ -166,8 +167,7 @@
     this.frame++;
     if (this.intro > 0) {
       this.intro--;
-      if (this.intro === 110) SB.sfx.play('count');
-      if (this.intro === 60) SB.sfx.play('count');
+      if (this.intro === 110 || this.intro === 80 || this.intro === 50) SB.sfx.play('count');
       if (this.intro === 20) SB.sfx.play('go');
     }
     SB.updateStage(this.stage, 1);
@@ -715,7 +715,7 @@
       if (s.kind === 'wave' && s.t % 3 === 0) this.fx.parts.push({ x: s.x, y: s.y, vx: -s.vx * 0.05, vy: 0, life: .7, dec: .07, col: '#7ee8ff', r: 8, g: 0 });
       if (s.kind === 'ice' && s.t % 2 === 0) this.fx.parts.push({ x: s.x, y: s.y, vx: 0, vy: 0, life: .6, dec: .08, col: '#dff6ff', r: 6, g: 0 });
 
-      for (var j = 0; j < this.fighters.length; j++) {
+      for (var j = 0; j < this.fighters.length && !this.replica; j++) {
         var t = this.fighters[j];
         if (t.idx === s.owner || t.dead > 0) continue;
         if (SB.dist(s.x, s.y, t.x, t.cy()) < s.r + t.hurtR()) {
@@ -725,7 +725,7 @@
           kill = true; break;
         }
       }
-      if (!kill) {
+      if (!kill && !this.replica) {
         /* stage collision */
         var plats = this.platsActive();
         for (var k = 0; k < plats.length; k++) {
@@ -741,7 +741,7 @@
       }
       var B = this.stage.blast;
       if (s.life <= 0 || s.x < B.l || s.x > B.r || s.y < B.t - 200 || s.y > B.b) {
-        if (s.explode && s.life <= 0) this.explode(s.x, s.y, s.owner, 16, 110);
+        if (s.explode && s.life <= 0 && !this.replica) this.explode(s.x, s.y, s.owner, 16, 110);
         kill = true;
       }
       if (kill) this.shots.splice(i, 1);
@@ -770,7 +770,7 @@
   /* ============================================================ items ============ */
   Game.prototype.updateItems = function () {
     if (this.hitstop > 0) return;
-    if (this.itemRate > 0 && this.intro <= 0 && !this.over) {
+    if (this.itemRate > 0 && this.intro <= 0 && !this.over && !this.replica) {
       this.itemTimer--;
       if (this.itemTimer <= 0) {
         this.spawnItem();
@@ -797,7 +797,7 @@
         }
       }
       /* pickup */
-      for (var j = 0; j < this.fighters.length; j++) {
+      for (var j = 0; j < this.fighters.length && !this.replica; j++) {
         var f = this.fighters[j];
         if (f.dead > 0) continue;
         if (Math.abs(f.x - it.x) < 30 * f.scale && it.y > f.y - 108 * f.scale && it.y < f.y + 14) {
@@ -833,7 +833,8 @@
       var f = this.fighters[i];
       if (f.dead > 0 || f.stocks <= 0) continue;
       if (f.x < B.l || f.x > B.r || f.y < B.t || f.y > B.b) {
-        this.ko(f);
+        if (this.replica) { f.vx = f.vy = 0; f.x = SB.clamp(f.x, B.l + 5, B.r - 5); f.y = SB.clamp(f.y, B.t + 5, B.b - 5); }
+        else this.ko(f);
       }
     }
   };
@@ -909,8 +910,16 @@
       f.heldItem = a[15] === 1 ? 'bomb' : (a[15] === 2 ? 'bat' : null);
       f.animT = a[16]; f.lean = a[17];
     }
-    this.shots = st.S.map(function (s) { return { kind: s[0], x: s[1], y: s[2], vx: s[3], vy: s[4], owner: s[5], r: s[0] === 'ice' ? 13 : 18, col: s[0] === 'ice' ? '#bff0ff' : (s[0] === 'bomb' ? '#3a3f52' : '#5ad8ff'), t: 0 }; });
-    this.items = st.I.map(function (v) { return { type: v[0], x: v[1], y: v[2], para: v[3], t: 0, vx: 0, vy: 0 }; });
+    this.replica = true;
+    this.shots = st.S.map(function (s) {
+      return {
+        kind: s[0], x: s[1], y: s[2], vx: s[3], vy: s[4], owner: s[5],
+        r: s[0] === 'ice' ? 13 : 18, t: 0, life: 400, dmg: 0, ang: 40, bkb: 0, kbg: 0,
+        g: s[0] === 'bomb' ? 0.5 : 0,
+        col: s[0] === 'ice' ? '#bff0ff' : (s[0] === 'bomb' ? '#3a3f52' : '#5ad8ff')
+      };
+    });
+    this.items = st.I.map(function (v) { return { type: v[0], x: v[1], y: v[2], para: v[3], t: 0, vx: 0, vy: 0, onG: !v[3] }; });
     for (i = 0; i < st.B.length && i < this.stage.plats.length; i++) {
       if (this.stage.plats[i].brk) this.stage.plats[i].broken = st.B[i] ? 300 : 0;
     }

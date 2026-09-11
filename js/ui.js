@@ -28,6 +28,20 @@
     $('stage-start').addEventListener('click', function () { SB.sfx.play('go'); UI.startMatch(); });
 
     $('btn-pause').addEventListener('click', function () { UI.pause(true); });
+    var sndBtns = [$('btn-sound'), $('pz-sound')];
+    function sndLabel() {
+      var on = !SB.sfx.isMuted();
+      sndBtns.forEach(function (b) { if (b) b.innerHTML = on ? '<span>🔊 音 ON</span>' : '<span>🔇 音 OFF</span>'; });
+    }
+    sndBtns.forEach(function (b) {
+      if (!b) return;
+      b.addEventListener('click', function () {
+        SB.sfx.mute(!SB.sfx.isMuted()); SB.sfx.play('ui'); sndLabel();
+        try { localStorage.setItem('sb_mute', SB.sfx.isMuted() ? '1' : '0'); } catch (e) { }
+      });
+    });
+    try { if (localStorage.getItem('sb_mute') === '1') SB.sfx.mute(true); } catch (e) { }
+    sndLabel();
     $('pz-resume').addEventListener('click', function () { UI.pause(false); });
     $('pz-retry').addEventListener('click', function () { UI.hideAll(); app.start(app.cfg); });
     $('pz-quit').addEventListener('click', function () { UI.hideAll(); app.quit(); UI.go('scr-title'); });
@@ -60,11 +74,20 @@
   };
 
   UI.nav = function (t) {
-    if (t === 'title') { if (SB.net.active) SB.net.leave(); UI.go('scr-title'); return; }
+    if (t === 'title') {
+      SB.net.leave(); UI.setWaiting(false);
+      $('roomid-box').hidden = true; $('btn-random').textContent = 'マッチング開始';
+      UI.go('scr-title'); return;
+    }
     if (t === 'howto') { UI.go('scr-howto'); return; }
     if (t === 'local') { S.mode = 'local'; UI.setupSlots(); UI.go('scr-char'); return; }
     if (t === 'cpu') { S.mode = 'cpu'; UI.setupSlots(); UI.go('scr-char'); return; }
-    if (t === 'online') { S.mode = 'online'; UI.go('scr-online'); return; }
+    if (t === 'online') {
+      S.mode = 'online'; S.remoteChar = null; UI.setWaiting(false);
+      $('roomid-box').hidden = true; $('btn-random').textContent = 'マッチング開始';
+      if (!SB.net.available) SB.net.preload();
+      UI.go('scr-online'); return;
+    }
   };
 
   UI.go = function (id) {
@@ -173,12 +196,23 @@
   UI.charNext = function () {
     if (S.mode === 'online') {
       if (!SB.net.active) { SB.toast('接続されていません'); return; }
-      SB.net.send({ t: 'char', c: S.slots[0].charId });
-      if (SB.net.isHost) UI.go('scr-stage');
-      else { SB.toast('相手（ホスト）の開始を待っています…', 4000); UI.go('scr-char'); }
+      SB.net.send({ t: 'char', c: S.slots[0].charId, ready: 1 });
+      if (SB.net.isHost) { UI.setWaiting(false); UI.go('scr-stage'); }
+      else {
+        UI.setWaiting(true);
+        SB.toast('ホストがステージを選ぶのを待っています…', 3200);
+      }
       return;
     }
+    UI.setWaiting(false);
     UI.go('scr-stage');
+  };
+
+  UI.setWaiting = function (on) {
+    var b = $('char-next');
+    b.textContent = on ? '相手を待っています…' : 'つぎへ →';
+    b.disabled = !!on;
+    b.style.opacity = on ? '.6' : '';
   };
 
   /* ---------------- stage grid ---------------- */
@@ -256,6 +290,7 @@
   };
 
   UI.startOnlineFromHost = function (msg) {
+    UI.setWaiting(false);
     S.stageId = msg.stage; S.stocks = msg.stocks; S.items = msg.items;
     S.remoteChar = msg.host;
     if (msg.guest) S.slots[0].charId = msg.guest;
@@ -289,7 +324,15 @@
       if (v.length < 3) { SB.toast('ルームIDを入力してください'); return; }
       SB.net.join(v);
     });
-    $('btn-random').addEventListener('click', function () { SB.sfx.play('ui'); SB.net.random(); });
+    $('btn-random').addEventListener('click', function () {
+      SB.sfx.play('ui');
+      if (SB.net._matching || SB.net.peer) {
+        SB.net.leave(); $('btn-random').textContent = 'マッチング開始';
+        $('roomid-box').hidden = true; return;
+      }
+      $('btn-random').textContent = 'キャンセル';
+      SB.net.random();
+    });
     $('btn-copy').addEventListener('click', function () {
       var t = $('roomid').textContent;
       if (navigator.clipboard) navigator.clipboard.writeText(t).then(function () { SB.toast('コピーしました: ' + t); });
@@ -314,9 +357,11 @@
       },
       data: function (m) { UI.onNet(m); },
       close: function (reason) {
-        SB.toast(reason || '相手が切断しました', 2600);
-        if (app.scene === 'game' || app.scene === 'result') { app.quit(); }
-        UI.go('scr-title');
+        UI.setWaiting(false);
+        $('btn-random').textContent = 'マッチング開始';
+        if (reason) SB.toast(reason, 2600);
+        if (app.scene === 'game' || app.scene === 'result') { app.quit(); UI.go('scr-title'); }
+        else if (document.querySelector('#scr-char.active')) UI.go('scr-online');
       }
     };
     if (!SB.net.available) $('netlog').textContent = 'オンライン機能を読み込み中…';
@@ -324,7 +369,10 @@
 
   UI.onNet = function (m) {
     if (!m || !m.t) return;
-    if (m.t === 'char') { S.remoteChar = m.c; UI.drawSlots(); }
+    if (m.t === 'char') {
+      S.remoteChar = m.c; S.remoteReady = !!m.ready; UI.drawSlots();
+      if (m.ready) SB.toast('あいてが ' + SB.charById(m.c).name + ' を選びました', 1800);
+    }
     else if (m.t === 'start') { UI.startOnlineFromHost(m); }
   };
 

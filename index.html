@@ -32,7 +32,10 @@
         <button class="btn big" data-go="online">
           <i class="ic ic-net"></i><span>オンライン対戦</span><small>リアルタイム通信</small>
         </button>
-        <button class="btn ghost" data-go="howto"><span>あそびかた</span></button>
+        <div class="title-row">
+          <button class="btn ghost" data-go="howto"><span>あそびかた</span></button>
+          <button class="btn ghost" id="btn-sound"><span>🔊 音 ON</span></button>
+        </div>
       </div>
       <p class="hint">横持ち推奨 / タッチ操作専用</p>
     </div>
@@ -149,6 +152,7 @@
     <div class="panel small">
       <h2>ポーズ</h2>
       <button class="btn prim" id="pz-resume">つづける</button>
+      <button class="btn" id="pz-sound">🔊 音 ON</button>
       <button class="btn" id="pz-retry">はじめから</button>
       <button class="btn" id="pz-quit">やめる</button>
     </div>

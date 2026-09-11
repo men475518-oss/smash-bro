@@ -48,6 +48,7 @@ canvas#game{position:absolute;inset:0;width:100%;height:100%;display:block;touch
 .tagline{font-size:12px;opacity:.75;margin-bottom:16px;letter-spacing:.08em}
 .hint{margin-top:12px;font-size:11px;opacity:.5}
 .menu{display:flex;flex-direction:column;gap:9px;align-items:center}
+.title-row{display:flex;gap:8px;align-items:center;justify-content:center;flex-wrap:wrap}
 
 /* ---------- buttons ---------- */
 .btn{
