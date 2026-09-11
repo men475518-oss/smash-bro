@@ -303,6 +303,6 @@
   /* leave politely when the tab closes */
   w.addEventListener('beforeunload', function () { if (N.active) N.send({ t: 'bye' }); });
 
-  /* start fetching the library early so the lobby is ready when opened */
-  w.addEventListener('load', function () { setTimeout(function () { N.preload(); }, 800); });
+  /* the PeerJS library is fetched lazily the first time the online menu is opened,
+     so offline play never waits on (or fails at) a network request. */
 })(window);

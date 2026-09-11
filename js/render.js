@@ -235,7 +235,7 @@
       c.closePath(); c.fill();
     }
     c.restore();
-    for (i = 0; i < 4; i++) cloud(c, ((i * 470 + t * 0.5) % 1700) - 850 + px * 0.5, -60 + (i % 2) * 190 + py * 0.5, 1.4, 0.55);
+    for (i = 0; i < 3; i++) cloud(c, ((i * 620 + t * 0.45) % 1800) - 900 + px * 0.5, 40 + (i % 2) * 170 + py * 0.5, 1.1, 0.3);
   }
 
   /* ============================================================ stage platforms ============ */
@@ -371,22 +371,48 @@
   function platSky(c, p, main) {
     var x = p.x, y = p.y, wd = p.w, h = p.h;
     c.save();
-    c.beginPath();
-    c.moveTo(x + 6, y);
-    c.lineTo(x + wd - 6, y);
-    c.quadraticCurveTo(x + wd + 4, y + h * 0.4, x + wd - 22, y + h);
-    c.lineTo(x + 22, y + h);
-    c.quadraticCurveTo(x - 4, y + h * 0.4, x + 6, y);
-    c.closePath();
-    c.fillStyle = lg(c, 'metal' + h, 0, y, 0, y + h, [[0, '#dfe9f6'], [0.3, '#9aabc4'], [0.72, '#5c6d8c'], [1, '#36425c']]);
-    c.fill();
-    c.strokeStyle = 'rgba(20,28,48,.9)'; c.lineWidth = 3; c.stroke();
-    /* glowing rune strip */
-    c.fillStyle = lg(c, 'rune', 0, y + 2, 0, y + 10, [[0, '#9df0ff'], [1, 'rgba(80,200,255,0)']]);
-    c.fillRect(x + 10, y + 2, wd - 20, 9);
-    c.globalAlpha = .75; c.fillStyle = '#e9fbff'; c.fillRect(x + 8, y, wd - 16, 3);
-    c.globalAlpha = .5; c.fillStyle = '#2ad4ff';
-    for (var i = 0; i * 46 < wd - 30; i++) c.fillRect(x + 22 + i * 46, y + h - 7, 18, 3);
+    if (main) {
+      /* fortress block : tapered hull with a keel */
+      c.beginPath();
+      c.moveTo(x, y);
+      c.lineTo(x + wd, y);
+      c.lineTo(x + wd - 14, y + h * 0.62);
+      c.lineTo(x + wd * 0.62, y + h);
+      c.lineTo(x + wd * 0.38, y + h);
+      c.lineTo(x + 14, y + h * 0.62);
+      c.closePath();
+      c.fillStyle = lg(c, 'metalM' + h, 0, y, 0, y + h, [[0, '#e6eefb'], [0.22, '#a9bad3'], [0.62, '#5b6c8b'], [1, '#2c3752']]);
+      c.fill();
+      c.strokeStyle = 'rgba(16,22,40,.92)'; c.lineWidth = 3.4; c.lineJoin = 'round'; c.stroke();
+      /* hull plating */
+      c.save(); c.globalAlpha = .28; c.strokeStyle = '#101728'; c.lineWidth = 2;
+      for (var i = 1; i * 78 < wd; i++) {
+        c.beginPath(); c.moveTo(x + i * 78, y + 6); c.lineTo(x + i * 78 - 8, y + h * 0.72); c.stroke();
+      }
+      c.restore();
+      /* keel light */
+      c.save(); c.globalAlpha = .55; c.strokeStyle = '#4fd8ff'; c.lineWidth = 3;
+      c.beginPath(); c.moveTo(x + wd * 0.4, y + h - 2); c.lineTo(x + wd * 0.6, y + h - 2); c.stroke(); c.restore();
+    } else {
+      c.beginPath();
+      c.moveTo(x + 5, y);
+      c.lineTo(x + wd - 5, y);
+      c.quadraticCurveTo(x + wd + 2, y + h * 0.45, x + wd - 18, y + h);
+      c.lineTo(x + 18, y + h);
+      c.quadraticCurveTo(x - 2, y + h * 0.45, x + 5, y);
+      c.closePath();
+      c.fillStyle = lg(c, 'metalS' + h, 0, y, 0, y + h, [[0, '#e6eefb'], [0.34, '#9dafc9'], [1, '#3a4763']]);
+      c.fill();
+      c.strokeStyle = 'rgba(16,22,40,.9)'; c.lineWidth = 3; c.stroke();
+    }
+    /* glowing rune strip along the top */
+    c.fillStyle = lg(c, 'rune', 0, y + 1, 0, y + 11, [[0, 'rgba(150,240,255,.95)'], [1, 'rgba(60,190,255,0)']]);
+    c.fillRect(x + 10, y + 1, wd - 20, 10);
+    c.save(); c.globalAlpha = .9; c.fillStyle = '#f2fdff';
+    c.fillRect(x + 7, y - 1, wd - 14, 3); c.restore();
+    c.save(); c.globalAlpha = .45 + Math.sin(R.t * 0.06) * 0.15; c.fillStyle = '#2ad4ff';
+    for (var k = 0; k * 52 < wd - 34; k++) c.fillRect(x + 24 + k * 52, y + h - (main ? 16 : 7), 20, 3);
+    c.restore();
     c.restore();
   }
 

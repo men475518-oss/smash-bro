@@ -364,7 +364,7 @@
         else if (document.querySelector('#scr-char.active')) UI.go('scr-online');
       }
     };
-    if (!SB.net.available) $('netlog').textContent = 'オンライン機能を読み込み中…';
+    $('netlog').textContent = 'ルームを作るか、相手のルームIDを入力してください。';
   };
 
   UI.onNet = function (m) {

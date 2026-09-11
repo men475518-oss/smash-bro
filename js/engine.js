@@ -90,6 +90,7 @@
     this.buff = { atk: 0, speed: 0, barrier: 0, slow: 0 };
     this.heldItem = null; this.itemT = 0;
     this.cool = 0;
+    this.buf = null; this.bufT = 0;     /* buffered attack input */
     this.dead = 0; this.koT = 0;
     this.animT = 0; this.pose = 'idle'; this.poseT = 0; this.lean = 0;
     this.dropT = 0;
@@ -216,6 +217,13 @@
   Game.prototype.updateFighter = function (f, inp) {
     var C = f.char;
 
+    /* input buffer : a press made during lag still comes out once the character is free */
+    if (inp) {
+      if (inp.atk && !inp.patk) { f.buf = 'atk'; f.bufT = 12; }
+      else if (inp.smash && !inp.psmash) { f.buf = 'smash'; f.bufT = 12; }
+      else if (inp.sp && !inp.psp) { f.buf = 'sp'; f.bufT = 12; }
+    }
+
     /* timers that always run */
     if (f.blink > 0) f.blink--;
     if (f.comboT > 0) { f.comboT--; if (f.comboT === 0) f.combo = 0; }
@@ -240,6 +248,7 @@
     if (f.buff.atk === 0 && f.heldItem === 'bat') f.heldItem = null;
     if (f.dropT > 0) f.dropT--;
     if (f.landT > 0) f.landT--;
+    if (f.bufT > 0) { f.bufT--; if (f.bufT === 0) f.buf = null; }
 
     var frozen = this.intro > 0;
     var spdMul = (f.buff.speed > 0 ? 1.45 : 1) * (f.buff.slow > 0 ? 0.55 : 1);
@@ -339,8 +348,9 @@
       }
     }
 
-    /* attacks */
-    if (inp.atk && !inp.patk) {
+    /* attacks (buffered) */
+    if (f.buf === 'atk') {
+      f.buf = null; f.bufT = 0;
       if (f.heldItem === 'bomb') this.throwBomb(f, inp);
       else if (!f.onGround) this.startMove(f, C.moves.air, 1);
       else {
@@ -348,17 +358,21 @@
         this.startMove(f, jab, 1);
         f.combo = (f.combo + 1) % 3; f.comboT = 28;
       }
+    } else if (f.buf === 'smash') {
+      f.buf = null; f.bufT = 0;
+      if (f.onGround) {
+        f.charging = true; f.charge = 0;
+        f.chargeDir = inp.y < -0.5 ? 'u' : (inp.y > 0.5 ? 'd' : 'f');
+        if (f.chargeDir === 'f' && Math.abs(inp.x) > 0.4) f.facing = SB.sign(inp.x);
+        f.pose = f.chargeDir === 'u' ? 'usmash' : (f.chargeDir === 'd' ? 'dsmash' : 'fsmash');
+        f.poseT = 0;
+      } else {
+        this.startMove(f, C.moves.air, 1.1);
+      }
+    } else if (f.buf === 'sp' && f.cool <= 0) {
+      f.buf = null; f.bufT = 0;
+      this.startSpecial(f, inp);
     }
-    if (inp.smash && !inp.psmash && f.onGround) {
-      f.charging = true; f.charge = 0;
-      f.chargeDir = inp.y < -0.5 ? 'u' : (inp.y > 0.5 ? 'd' : 'f');
-      if (f.chargeDir === 'f' && Math.abs(inp.x) > 0.4) f.facing = SB.sign(inp.x);
-      f.pose = f.chargeDir === 'u' ? 'usmash' : (f.chargeDir === 'd' ? 'dsmash' : 'fsmash');
-      f.poseT = 0;
-    } else if (inp.smash && !inp.psmash && !f.onGround) {
-      this.startMove(f, C.moves.air, 1.1);
-    }
-    if (inp.sp && !inp.psp && f.cool <= 0) this.startSpecial(f, inp);
 
     /* gravity */
     if (!f.onGround) {
@@ -686,7 +700,7 @@
       t.vy = -Math.sin(ang) * spd;
       t.hitstun = Math.max(4, hs);
       t.onGround = false; t.plat = null;
-      t.act = null; t.charging = false; t.state = 'launch';
+      t.act = null; t.charging = false; t.state = 'launch'; t.buf = null; t.bufT = 0;
       t.pose = 'hit'; t.poseT = 0;
       t.facing = -dir;
       if (o.ice) t.buff.slow = 130;
@@ -844,6 +858,7 @@
     f.dead = 105;
     f.percent = 0;
     f.vx = f.vy = 0; f.act = null; f.charging = false; f.hitstun = 0; f.heldItem = null;
+    f.buf = null; f.bufT = 0;
     f.buff.atk = f.buff.speed = f.buff.barrier = f.buff.slow = 0;
     var killer = this.fighters[f.lastHitBy];
     if (killer && killer !== f) killer.kos++;

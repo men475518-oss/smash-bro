@@ -3,18 +3,36 @@
   'use strict';
   var SB = w.SB;
 
+  var BKEYS = ['jump', 'atk', 'smash', 'sp'];
+
   function PadState() {
     this.x = 0; this.y = 0;            // analog stick -1..1
     this.jump = false; this.atk = false; this.smash = false; this.sp = false;
     this.pjump = false; this.patk = false; this.psmash = false; this.psp = false; // previous
     this.stickActive = false; this.sx = 0; this.sy = 0; this.bx = 0; this.by = 0; // visual
+    this._min = { jump: 0, atk: 0, smash: 0, sp: 0 };   // minimum hold (frames)
+    this._rel = { jump: 0, atk: 0, smash: 0, sp: 0 };   // release deferred until _min expires
   }
+  /* a tap shorter than one frame must still be seen by the engine, so every
+     press is held for at least two simulation frames before it can release */
+  PadState.prototype.press = function (id) { this[id] = true; this._min[id] = 2; this._rel[id] = 0; };
+  PadState.prototype.release = function (id) {
+    if (this._min[id] > 0) this._rel[id] = 1; else this[id] = false;
+  };
   PadState.prototype.snapshot = function () {
     this.pjump = this.jump; this.patk = this.atk; this.psmash = this.smash; this.psp = this.sp;
+    for (var i = 0; i < 4; i++) {
+      var k = BKEYS[i];
+      if (this._min[k] > 0) {
+        this._min[k]--;
+        if (this._min[k] === 0 && this._rel[k]) { this[k] = false; this._rel[k] = 0; }
+      }
+    }
   };
   PadState.prototype.clear = function () {
     this.x = this.y = 0; this.jump = this.atk = this.smash = this.sp = false;
     this.stickActive = false;
+    for (var i = 0; i < 4; i++) { this._min[BKEYS[i]] = 0; this._rel[BKEYS[i]] = 0; }
   };
   PadState.prototype.copyFrom = function (o) {
     this.x = o.x; this.y = o.y; this.jump = o.jump; this.atk = o.atk; this.smash = o.smash; this.sp = o.sp;
@@ -63,7 +81,7 @@
       e.preventDefault();
       kdown[i][m] = down;
       var p = this.pads[i];
-      if (m === 'atk' || m === 'smash' || m === 'sp' || m === 'jump') p[m] = down;
+      if (m === 'atk' || m === 'smash' || m === 'sp' || m === 'jump') { if (down) p.press(m); else p.release(m); }
       p.x = (kdown[i].R ? 1 : 0) - (kdown[i].L ? 1 : 0);
       p.y = (kdown[i].D ? 1 : 0) - (kdown[i].U ? 1 : 0);
     }
@@ -173,7 +191,7 @@
     for (var i = 0; i < L.pads.length; i++) {
       var pl = L.pads[i], p = this.pads[i];
       var b = this.hitBtn(pl, x, y);
-      if (b) { this.ptr[e.pointerId] = { kind: 'btn', pad: i, btn: b.id }; p[b.id] = true; b.press = 1; return; }
+      if (b) { this.ptr[e.pointerId] = { kind: 'btn', pad: i, btn: b.id }; p.press(b.id); b.press = 1; return; }
     }
     for (i = 0; i < L.pads.length; i++) {
       pl = L.pads[i]; p = this.pads[i];
@@ -207,9 +225,9 @@
       var b = this.hitBtn(pl, x, y);
       var nid = b ? b.id : null;
       if (nid !== t.btn) {
-        if (t.btn) { p[t.btn] = false; }
+        if (t.btn) p.release(t.btn);
         t.btn = nid;
-        if (nid) { p[nid] = true; b.press = 1; }
+        if (nid) { p.press(nid); b.press = 1; }
       }
     }
   };
@@ -219,7 +237,7 @@
     delete this.ptr[e.pointerId];
     var p = this.pads[t.pad];
     if (t.kind === 'stick') { p.stickActive = false; p.x = 0; p.y = 0; }
-    else if (t.btn) p[t.btn] = false;
+    else if (t.btn) p.release(t.btn);
   };
 
   Input.releaseAll = function () {
